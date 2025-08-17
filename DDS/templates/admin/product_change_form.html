@@ -1,0 +1,102 @@
+{% extends "admin/change_form.html" %}
+
+{% block admin_change_form_document_ready %}
+    {{ block.super }}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // Ищем элементы
+            const categoryField = document.getElementById('id_category');
+            const subcategoryField = document.getElementById('id_subcategory');
+            const writetypeField = document.getElementById('id_write_type');
+
+            // Если элементы не найдены выход
+            if (!categoryField || !subcategoryField || !writetypeField) return;
+
+            function filterSubcategories() {
+                // Извлекаем значение поля категории записи
+                const categoryId = categoryField.value;
+                
+                // Если никакое значение не выбрано
+                if (!categoryId) {
+                    subcategoryField.innerHTML = '<option value="">---------</option>';
+                    return;
+                }
+
+                // Очищаем текущие опции
+                subcategoryField.innerHTML = '<option value="">Загрузка...</option>';
+
+                // Запрашиваем ответ от апи
+                fetch('{% url "admin:get_subcategories" %}?category_id=' + categoryId)
+                    .then(response => response.json()) // При получении ответа от апи, извлекаем json с данными
+                    .then(data => {
+
+                        // Устанавливаем состояние по умолчанию
+                        subcategoryField.innerHTML = '<option value="">---------</option>';
+                        
+                        // Добавляем новые опции выбора выпадающего списка
+                        data.forEach(sub => {
+                            const option = new Option(sub.name, sub.id);
+                            subcategoryField.add(option);
+                        });
+                    })
+                    .catch(err => {
+                        // При ошибке пишем ошибку в консоль и устанавливаем надпись
+                        console.error('Ошибка загрузки подкатегорий:', err);
+                        subcategoryField.innerHTML = '<option value="">Ошибка</option>';
+                    });
+            }
+
+            function filterCategories() {
+                // Извлекаем значение поля типа записи
+                const write_type_id = writetypeField.value;
+
+                // Если никакое значение не выбрано 
+                if (!write_type_id) {
+                    categoryField.innerHTML = '<option value="">---------</option>';
+                    return;
+                }
+
+                // Очищаем текущие опции
+                categoryField.innerHTML = '<option value="">Загрузка...</option>';
+
+                // Запрашиваем ответ от апи
+                fetch('{% url "admin:get_categories" %}?write_type_id=' + write_type_id)
+                    .then(response => response.json()) // При получении ответа от апи, извлекаем json с данными
+                    .then(data => {
+                        
+                        // Устанавливаем состояние по умолчанию
+                        categoryField.innerHTML = '<option value="">---------</option>';
+
+                        // Добавляем новые опции выбора выпадающего списка
+                        data.forEach(sub => {
+                            const option = new Option(sub.name, sub.id);
+                            categoryField.add(option);
+                        });
+                    })
+                    .catch(err => {
+                        // При ошибке пишем ошибку в консоль и устанавливаем надпись 
+                        console.error('Ошибка загрузки категорий:', err);
+                        categoryField.innerHTML = '<option value="">Ошибка</option>';
+                    });
+            }
+
+            // При изменении категории — обновляем подкатегории
+            categoryField.addEventListener('change', filterSubcategories);
+
+            // При изменении типа - обновляем категории
+            writetypeField.addEventListener('change', filterCategories);
+
+            // Если уже выбран тип, фильтруем категории
+            if (writetypeField.value) {
+                filterCategories();
+            }
+
+            // Если уже выбрана категория, фильтруем подкатегории
+            if (categoryField.value) {
+                filterSubcategories();
+            }
+        });
+    </script>
+{% endblock %}
